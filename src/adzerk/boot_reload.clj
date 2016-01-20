@@ -42,7 +42,7 @@
     (map pr-str) (interpose "\n") (apply str) (spit f)))
 
 (defn- send-visual! [pod messages]
-  (when-not (empty? messages)
+  (when (and (not (empty? messages)) (:hud? (get-env)))
     (pod/with-call-in pod
       (adzerk.boot-reload.server/send-visual!
         ~messages))))
@@ -97,7 +97,8 @@
    j on-jsload SYM     sym "The callback to call when JS files are reloaded. (optional)"
    _ asset-host HOST   str "The asset-host where to load files from. Defaults to host of opened page. (optional)"
    a asset-path PATH   str "The asset-path. This is removed from the start of reloaded urls. (optional)"
-   o open-file COMMAND str "The command to run when warning or exception is clicked on HUD. Passed to format. (optional)"]
+   o open-file COMMAND str "The command to run when warning or exception is clicked on HUD. Passed to format. (optional)"
+   v hud               bool "Toggle for HUD. Defaults to true (visible)."]
 
   (let [pod  (make-pod)
         src  (tmp-dir!)
@@ -108,6 +109,7 @@
         url  (start-server @pod {:ip ip :port port :ws-host ws-host :secure? secure
                                  :open-file open-file})]
     (set-env! :source-paths #(conj % (.getPath src)))
+    (set-env! :hud? (if (nil? hud) true hud))
     (write-cljs! out url on-jsload asset-host)
     (fn [next-task]
       (fn [fileset]
